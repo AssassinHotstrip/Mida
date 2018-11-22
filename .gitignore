@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+.idea/
+logs/*.log
+
+
 # C extensions
 *.so
 
@@ -104,4 +109,4 @@ venv.bak/
 .mypy_cache/
 
 
-.idea/
+
