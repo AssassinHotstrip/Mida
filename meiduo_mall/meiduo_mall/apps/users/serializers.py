@@ -18,7 +18,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
     # 反序列化（输入/校验）："username", "password", "password2","mobile", "sms_code", "allow"
     class Meta:
         model = User  # 使序列化器映射该模型中的字段
-        fields = ["id", "username", "password", "password2", "mobile", "sms_code", "allow"]
+        # fields = ["id", "username", "password", "password2", "mobile", "sms_code", "allow"]
+        fields = ['id', 'username', 'password', 'password2', 'mobile', 'sms_code', 'allow']
         extra_kwargs = {
             'username': {
                 'min_length': 5,

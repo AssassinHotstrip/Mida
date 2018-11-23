@@ -29,7 +29,7 @@ class SMSCodeView(APIView):
         :return: None
         """
         # 连接redis
-        redis_conn = get_redis_connection("verify_code")
+        redis_conn = get_redis_connection("verify_codes")
 
         # 获取send_flag
         send_flag = redis_conn.get("send_flag_%s" % mobile)
