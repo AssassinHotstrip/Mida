@@ -1,0 +1,3 @@
+VERIFY_EMAIL_TOKEN_EXPIRES = 24 * 60 * 60  # 邮箱激活链接的有效期
+
+USER_ADDRESS_COUNTS_LIMIT = 20  # 每个用户收货地址数量上限

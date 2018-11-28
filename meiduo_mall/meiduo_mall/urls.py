@@ -25,5 +25,13 @@ urlpatterns = [
     # 用户
     url(r'^', include('users.urls')),
 
+    # QQ模块路由
+    url(r'^oauth/', include('oauth.urls')),
+
+    # 省市区路由
+    url(r'^', include('areas.urls')),
+
+
 
 ]
+

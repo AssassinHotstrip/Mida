@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
-
+import datetime
 import os  # 拼接路径
 import sys  # 导包路径
 
@@ -58,7 +58,12 @@ INSTALLED_APPS = [
 
 
     # 注册应用
-    'meiduo_mall.apps.users.apps.UsersConfig',  # 注册users应用
+    # 'meiduo_mall.apps.users.apps.UsersConfig',
+    'users.apps.UsersConfig',  # 注册users应用
+    'oauth.apps.OauthConfig',  # QQ登陆模块
+    'areas.apps.AreasConfig',  # 收货地址模块
+    'contents.apps.ContentsConfig', # 首页广告
+    'goods.apps.GoodsConfig',  # 商品模型
 
 ]
 
@@ -224,6 +229,22 @@ LOGGING = {
 REST_FRAMEWORK = {
     # 异常处理
     'EXCEPTION_HANDLER': 'meiduo_mall.utils.exceptions.exception_handler',
+    # 认证
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',  # 默认用jwt认证
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+}
+
+# 修改JWT默认配置
+JWT_AUTH = {
+
+        # 有效期
+        'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+
+        # 修改jwt_response_payload_handler函数导包路径
+        'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler',
 }
 
 
@@ -243,3 +264,26 @@ CORS_ORIGIN_WHITELIST = (
     'api.meiduo.site:8000'
 )
 CORS_ALLOW_CREDENTIALS = True  # 允许跨域后携带cookie
+
+
+# 修改认证系统后端
+AUTHENTICATION_BACKENDS = ['users.utils.UserNameMobileAuthBackend']
+
+# QQ登录参数
+QQ_CLIENT_ID = '101474184'
+QQ_CLIENT_SECRET = 'c6ce949e04e12ecc909ae6a8b09b637c'
+QQ_REDIRECT_URI = 'http://www.meiduo.site:8080/oauth_callback.html'  # 回调地址
+
+
+
+# 邮箱配置信息
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.163.com'
+EMAIL_PORT = 25
+
+# 发送邮件的邮箱
+EMAIL_HOST_USER = 'lallalal99@163.com'
+# 在邮箱中设置的客户端授权密码
+EMAIL_HOST_PASSWORD = 'python99'
+# 收件⼈人看到的发件⼈人
+EMAIL_FROM = 'python<lallalal99@163.com>'

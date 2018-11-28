@@ -1,9 +1,90 @@
+from rest_framework_jwt.settings import api_settings
 from django_redis import get_redis_connection
 from rest_framework import serializers
 import re
 
+from .models import User, Address
+from celery_tasks.email.tasks import send_verify_email
 
-from .models import User
+
+class AddressTitleSerializer(serializers.ModelSerializer):
+    """
+    地址标题
+    """
+    class Meta:
+        model = Address
+        fields = ('title',)
+
+
+class UserAddressSerializer(serializers.ModelSerializer):
+    """
+    用户地址序列化器
+    """
+    province = serializers.StringRelatedField(read_only=True)
+    city = serializers.StringRelatedField(read_only=True)
+    district = serializers.StringRelatedField(read_only=True)
+    province_id = serializers.IntegerField(label='省ID', required=True)
+    city_id = serializers.IntegerField(label='市ID', required=True)
+    district_id = serializers.IntegerField(label='区ID', required=True)
+
+    class Meta:
+        model = Address
+        exclude = ('user', 'is_deleted', 'create_time', 'update_time')
+
+    def validate_mobile(self, value):
+        """
+        验证手机号
+        """
+        if not re.match(r'^1[3-9]\d{9}$', value):
+            raise serializers.ValidationError('手机号格式错误')
+        return value
+
+    def create(self, validated_data):
+        # 在序列化器中取到user并把它添加到反序列化之后的字典中
+        validated_data['user'] = self.context['request'].user  # 在视图中可以使用request.user直接获取到用户;但序列化器中获取不到,需要使用context['request'].user来获取当前登录用户
+        # 创建并保存地址中间就为了  地址关联用户
+        address = Address.objects.create(**validated_data)
+
+        return address
+
+
+
+class EmailSerializer(serializers.ModelSerializer):
+    """邮箱序列化器"""
+    class Meta:
+        model = User
+        fields = ['id', 'email']
+        extra = {
+            'email': {
+                'required': True
+            }
+        }
+
+    def update(self, instance, validated_data):
+        """重写update： 1.只保存邮箱； 2.发激活邮件"""
+        # 只保存邮箱
+        instance.email = validated_data.get('email')
+        instance.save()  # ORM 中的保存
+
+        # 2.发激活邮件
+        # 生成邮箱激活链接
+        verify_url = instance.generate_verify_email_url()
+        # # 异步任务                      收件人（当前用户）  激活链接
+        # send_verify_email.delay(instance.email, verify_url)
+        send_verify_email.delay(instance.email, verify_url)
+
+        return instance
+
+
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    """用户详细信息序列化器"""
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'mobile', 'email', 'email_active']
+
+
 
 class CreateUserSerializer(serializers.ModelSerializer):
     """注册序列化器"""
@@ -11,15 +92,16 @@ class CreateUserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(label='确认密码', write_only=True)
     sms_code = serializers.CharField(label='短信验证码', write_only=True)
     allow = serializers.CharField(label='同意协议', write_only=True)
+    token = serializers.CharField(label='token', read_only=True)
 
     # 所有字段："id", "username", "password", "password2", "mobile", "sms_code", "allow"
     # 模型中字段："id", "username", "password", "mobile",
-    # 序列化（输出/响应到前端）："id", "username", "mobile",
-    # 反序列化（输入/校验）："username", "password", "password2","mobile", "sms_code", "allow"
+    # 序列化（输出/响应到前端）："id", "username", "mobile", 'token'
+    # 反序列化（输入/校验）："username", "password", "password2","mobile", "sms_code", "allow", 'token'
     class Meta:
         model = User  # 使序列化器映射该模型中的字段
         # fields = ["id", "username", "password", "password2", "mobile", "sms_code", "allow"]
-        fields = ['id', 'username', 'password', 'password2', 'mobile', 'sms_code', 'allow']
+        fields = ['id', 'username', 'password', 'password2', 'mobile', 'sms_code', 'allow', 'token']
         extra_kwargs = {
             'username': {
                 'min_length': 5,
@@ -86,6 +168,16 @@ class CreateUserSerializer(serializers.ModelSerializer):
         user.set_password(user.password)
 
         user.save()  # 保存到数据库
+
+
+        # token并不需要存到数据库中，写在save后面
+        # 手动创建jwt的token
+        jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER  # 加载生成载荷的函数
+        jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER  # 加载进行生成token的函数
+
+        payload = jwt_payload_handler(user)  # 通过传入用户信息进行生成载荷
+        token = jwt_encode_handler(payload)  # 根据载荷内部再拿到内部header，再取到SECERY_KEY进行加密并拼接为完整的token
+        user.token = token
 
         return user
 
