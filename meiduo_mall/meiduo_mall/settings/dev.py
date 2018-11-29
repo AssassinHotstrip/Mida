@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     # 第三方注册
     'rest_framework',  # 注册DRF
     'corsheaders',  # 注册cros,解决跨域请求问题
+    'ckeditor', # 富⽂文本编辑器器
+    'ckeditor_uploader', # 富⽂文本编辑器器上传图⽚片模块
 
 
     # 注册应用
@@ -287,3 +289,27 @@ EMAIL_HOST_USER = 'lallalal99@163.com'
 EMAIL_HOST_PASSWORD = 'python99'
 # 收件⼈人看到的发件⼈人
 EMAIL_FROM = 'python<lallalal99@163.com>'
+
+
+# 修改django文件存储类(django默认将文件存在本地)
+DEFAULT_FILE_STORAGE = 'meiduo_mall.utils.fastdfs.fdfs_storage.FastDFSStorage'
+
+# FastDFS
+
+# FDFS_URL = 'http://image.meiduo.site:8888/'
+# fdfs_client文件所在位置,BASE_DIR=meiduo.hzt/meiduo_mall
+FDFS_CLIENT_CONF = os.path.join(BASE_DIR, 'utils/fastdfs/client.conf')
+# fdfs_ngix 域名和端口
+FDFS_BASE_URL = 'http://192.168.170.211:8888/'
+
+
+
+# 富文本编辑器ckeditor配置
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',  # 工具条功能
+        'height': 300,  # 编辑器高度
+        # 'width': 300,  # 编辑器宽
+    },
+}
+CKEDITOR_UPLOAD_PATH = ''  # 上传图片保存路径，使用了FastDFS，所以此处设为''

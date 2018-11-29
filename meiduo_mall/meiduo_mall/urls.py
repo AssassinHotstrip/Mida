@@ -17,7 +17,13 @@ from django.conf.urls import url, include
 from django.contrib import admin
 
 urlpatterns = [
+
     url(r'^admin/', admin.site.urls),
+
+    # 富文本编辑器路由
+    url(r'^ckeditor/', include('ckeditor_uploader.urls')),
+
+
 
     # 发短信
     url(r'^', include('verifications.urls')),
@@ -30,6 +36,7 @@ urlpatterns = [
 
     # 省市区路由
     url(r'^', include('areas.urls')),
+
 
 
 
