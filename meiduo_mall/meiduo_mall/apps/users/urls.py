@@ -27,7 +27,8 @@ urlpatterns = [
     # 验证邮箱
     url(r'^emails/verification/$', views.VerifyEmailView.as_view()),
 
-
+    # 浏览记录
+    url(r'^browse_histories/$', views.UserBrowseHistoryView.as_view()),
 
 ]
 

@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django_redis import get_redis_connection
+
 from rest_framework import status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,14 +9,48 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import GenericViewSet
 
+from goods.models import SKU
+from goods.serializers import SKUSerializer
 from users import constants
 from .models import User, Address
-from .serializers import CreateUserSerializer, UserDetailSerializer, EmailSerializer, UserAddressSerializer, AddressTitleSerializer
+from .serializers import CreateUserSerializer, UserDetailSerializer, EmailSerializer, UserAddressSerializer, AddressTitleSerializer, UserBrowseHistorySerializer
 
 
 
 
 # Create your views here.
+
+# POST browse_histories/
+class  UserBrowseHistoryView(CreateAPIView):
+    """保存用户浏览记录"""
+    # 指定序列器进行数据的校验
+    serializer_class = UserBrowseHistorySerializer
+
+    # 指定只有登录用户才能访问此接口
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """获取用户的浏览记录"""
+        # 获取user_id
+        user_id = request.user.id
+        # 创建redis连接
+        redis_conn = get_redis_connection('history')
+
+        # 取redis中的当前登录用户的所有浏览记录数据
+        # lrange(key, start, end)
+        sku_ids = redis_conn.lrange('history_%s' % user_id, 0, -1)
+
+        sku_list = []  # 保存sku模型对象
+        # 遍历sku_ids通过sku_id取出每一个sku商品模型对象
+        for sku_id in sku_ids:
+            sku_model = SKU.objects.get(id=sku_id)
+            sku_list.append(sku_model)
+
+        serializer = SKUSerializer(sku_list, many=True)
+        return Response(serializer.data)
+
+
+
 class AddressViewSet(mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     """用户地址"""
     # 指定序列化器

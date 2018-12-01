@@ -37,7 +37,8 @@ urlpatterns = [
     # 省市区路由
     url(r'^', include('areas.urls')),
 
-
+    # 商品模块
+    url(r'^', include('goods.urls')),
 
 
 ]

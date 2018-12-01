@@ -3,8 +3,48 @@ from django_redis import get_redis_connection
 from rest_framework import serializers
 import re
 
+from goods.models import SKU
 from .models import User, Address
 from celery_tasks.email.tasks import send_verify_email
+
+
+# POST /browse_histories/
+class UserBrowseHistorySerializer(serializers.Serializer):
+    """反序列化用户浏览记录"""
+    sku_id = serializers.IntegerField(label="商品SKU编码", min_value=1)
+
+    def validate_sku_id(self, value):
+        """单独到此处对sku_id进行额外验证"""
+        try:
+            SKU.objects.get(id=value)
+        except SKU.DoseNotExist:
+            raise serializers.ValidationError("sku id 不存在")
+        # 校验成功,返回被校验值
+        return value
+
+    def create(self, validated_data):
+        """重写create方法将浏览记录存到redis"""
+
+        # 取出sku_id
+        sku_id = validated_data.get("sku_id")
+        # 获取用户id动态拼接做redis数据id
+        user_id = self.context.get("request").user.id
+        # 创建redis连接
+        redis_conn = get_redis_connection("history")
+        # 创建管道
+        pl = redis_conn.pipeline()
+        # 去重
+        # (key, 允许重复个数, 被去重数据)
+        pl.lrem('history_%s' % user_id, 0, sku_id)
+        # 添加
+        pl.lpush('history_%s' % user_id, sku_id)
+        # 截取(截取五个)
+        pl.ltrim('history_%s' % user_id, 0, 4)
+
+        # 执行管道
+        pl.execute()
+
+        return validated_data
 
 
 class AddressTitleSerializer(serializers.ModelSerializer):
