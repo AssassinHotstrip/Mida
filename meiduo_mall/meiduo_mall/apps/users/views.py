@@ -8,7 +8,9 @@ from rest_framework.generics import CreateAPIView, RetrieveAPIView, UpdateAPIVie
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import GenericViewSet
+from rest_framework_jwt.views import ObtainJSONWebToken
 
+from carts.utils import merge_cart_cookie_to_redis
 from goods.models import SKU
 from goods.serializers import SKUSerializer
 from users import constants
@@ -19,6 +21,25 @@ from .serializers import CreateUserSerializer, UserDetailSerializer, EmailSerial
 
 
 # Create your views here.
+# url(r'^authorizations/$', views.UserAuthorizeView.as_view()),
+class UserAuthorizeView(ObtainJSONWebToken):
+    """重写JWT_token认证类,目的为了让购物车合并,搭上账号登录的顺风车"""
+    # obtain_jwt_token-->ObtainJSONWebToken  :重写ObtainJSONWebToken的post方法，在其登录时添加merge_cart_cookie_to_redis方法
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        serializer = self.get_serializer(data=request.data)
+        # 验证
+        if serializer.is_valid():
+            # 获取ｕｓｅｒ以传入merge_cart_cookie_to_redis（）
+            user = serializer.object.get('user') or request.user
+
+            merge_cart_cookie_to_redis(request, user, response)
+
+        return response
+
+
 
 # POST browse_histories/
 class  UserBrowseHistoryView(CreateAPIView):

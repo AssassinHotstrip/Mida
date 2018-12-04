@@ -11,6 +11,7 @@ from rest_framework_jwt.settings import api_settings
 from .serializers import QQAuthUserSerializer
 from oauth.utils import generate_save_user_token
 from .models import OAuthQQUser
+from carts.utils import merge_cart_cookie_to_redis
 
 logger = logging.getLogger('django')
 
@@ -21,6 +22,8 @@ class QQAuthUserView(GenericAPIView):
     def get(self, request):
         # 获取到前端传来的code
         code = request.query_params.get('code')
+        if not code:
+            return Response({'message': '缺少code'}, status=status.HTTP_400_BAD_REQUEST)
         # 构建参数数据
         oauth = OAuthQQ(client_id=settings.QQ_CLIENT_ID,
                         client_secret=settings.QQ_CLIENT_SECRET,
@@ -38,12 +41,13 @@ class QQAuthUserView(GenericAPIView):
         try:
             # 用openid查询是否绑定美多商城（绑定？登录：新建）
             oauthqquser_model = OAuthQQUser.objects.get(openid=openid)
-        except OAuthQQUser.DoseNotExist:
+        except OAuthQQUser.DoesNotExist:
             # 如果此openid没有绑定过美多商城用户返回一个openid
             # return Response({'access_token': openid})  # 如果此openid没有绑定过用户,那么把openid返回给前端
             openid_access_token = generate_save_user_token(openid)
             return Response({'access_token': openid_access_token})
         else:
+            # 获取ｏａｕｔｈ＿ｕｓｅｒ关联的ｕｓｅｒ
             user = oauthqquser_model.user
             # 如果openid已绑定美多商城用户，直接生成JWT token，并返回
             jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -52,12 +56,17 @@ class QQAuthUserView(GenericAPIView):
             payload = jwt_payload_handler(user)
             token = jwt_encode_handler(payload)
 
-            return Response({
+
+            response = Response({
                 'token': token,
                 'user_id': user.id,
                 'username': user.username
             })
 
+            # 在此处进行购物车合并:COOKIE合并到redis（已绑定ＱＱ且登录）
+            response = merge_cart_cookie_to_redis(request, user, response)
+
+            return response
 
     def post(self,request):
         """用openid绑定用户"""
@@ -74,13 +83,19 @@ class QQAuthUserView(GenericAPIView):
         payload = jwt_payload_handler(user)
         token = jwt_encode_handler(payload)
 
+        # 绑定成功
+
         # 响应
-        return Response({
+        response = Response({
             'token': token,
             'user_id': user.id,
             'username': user.username
         })
 
+        # 在此处进行购物车合并:COOKIE合并到redis
+        response = merge_cart_cookie_to_redis(request, user, response)
+
+        return response
 
 # url(r'^qq/authorization/$', views.QQAuthURLView.as_view()),
 class QQAuthURLView(APIView):

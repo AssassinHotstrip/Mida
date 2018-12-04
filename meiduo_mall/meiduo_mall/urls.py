@@ -40,6 +40,8 @@ urlpatterns = [
     # 商品模块
     url(r'^', include('goods.urls')),
 
+    # 购物车模块
+    url(r'^', include('carts.urls')),
 
 ]
 

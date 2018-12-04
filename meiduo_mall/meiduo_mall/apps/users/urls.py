@@ -8,7 +8,7 @@ urlpatterns = [
     # 注册路由
     url(r'^users/$', views.Userview.as_view()),
 
-# 判断用户名是否已存在
+    # 判断用户名是否已存在
     url(r'^usernames/(?P<username>\w{5,20})/count/$',views.UsernameCountView.as_view()),
 
     # 判断手机号是否已存在
@@ -16,7 +16,9 @@ urlpatterns = [
 
     # JWT登陆
     # url(r'^authorizations/$', ObtainJSONWebToken.as_view()),
-    url(r'^authorizations/$', obtain_jwt_token),
+    # url(r'^authorizations/$', obtain_jwt_token),  <已被重写>
+    #  在此处进行购物车合并:COOKIE合并到redis（用户在使用JWT实现登录）
+    url(r'^authorizations/$', views.UserAuthorizeView.as_view()),
 
     # 获取用户详情
     url(r'^user/$', views.UserDetailView.as_view()),
