@@ -7,6 +7,10 @@ def merge_cart_cookie_to_redis(request, user, response):
 
     # 获取cookie中的购物车数据
     cookie_cart_str = request.COOKIES.get('cart')
+    # cookie中没数据时:
+    if not cookie_cart_str or cookie_cart_str == " ":
+        return response
+
     cookie_cart_dict = pickle.loads(base64.b64decode(cookie_cart_str.encode()))
     if not len(cookie_cart_dict.keys()):  # 如果cookie中没有购物车数据直接返回,不要执行下面的合并代码
         return response

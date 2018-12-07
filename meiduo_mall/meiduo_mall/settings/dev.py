@@ -59,6 +59,10 @@ INSTALLED_APPS = [
     'ckeditor_uploader', # 富⽂文本编辑器器上传图⽚片模块
     'django_crontab', # 定时任务
     'haystack',  # haystack对接搜索引擎
+    # 以下三个都是xadmin相关的应用
+    'xadmin',
+    'crispy_forms',
+    'reversion',
 
 
     # 注册应用
@@ -68,6 +72,8 @@ INSTALLED_APPS = [
     'areas.apps.AreasConfig',  # 收货地址模块
     'contents.apps.ContentsConfig', # 首页广告
     'goods.apps.GoodsConfig',  # 商品模型
+    'orders.apps.OrdersConfig',  # 订单模块
+    'payment.apps.PaymentConfig'  #支付模块
 
 ]
 
@@ -107,13 +113,21 @@ WSGI_APPLICATION = 'meiduo_mall.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASES = {
+DATABASES = {  # 主机,写入
      'default': {
         'ENGINE': 'django.db.backends.mysql',
         'HOST': '127.0.0.1',  # 数据库主机
         'PORT': 3306,  # 数据库端口
         'USER': 'meiduo',  # 数据库用户名
         'PASSWORD': 'meiduo',  # 数据库用户密码
+        'NAME': 'meiduo_mall'  # 数据库名字
+    },
+    'slave': {  # 从机,读取
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': '127.0.0.1',  # 数据库从机
+        'PORT': 8306,  # 数据库端口
+        'USER': 'root',  # 数据库用户名
+        'PASSWORD': 'mysql',  # 数据库用户密码
         'NAME': 'meiduo_mall'  # 数据库名字
     }
 }
@@ -359,4 +373,18 @@ HAYSTACK_CONNECTIONS = {
 
 # 当添加、修改、删除数据时，自动生成索引
 HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'# 静态化主页存储路径
-GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc')
+# GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc')
+
+
+# 支付宝
+ALIPAY_APPID = '2088102177046130'
+ALIPAY_DEBUG = True
+ALIPAY_URL = 'https://openapi.alipaydev.com/gateway.do'
+
+
+# 配置读写分离
+DATABASE_ROUTERS = ['meiduo_mall.utils.db_router.MasterSlaveDBRouter']
+#
+#
+# # 配置静态文件收集之后存放的目录
+STATIC_ROOT = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc/static')

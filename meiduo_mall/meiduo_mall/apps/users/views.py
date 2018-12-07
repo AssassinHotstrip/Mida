@@ -32,12 +32,16 @@ class UserAuthorizeView(ObtainJSONWebToken):
         serializer = self.get_serializer(data=request.data)
         # 验证
         if serializer.is_valid():
-            # 获取ｕｓｅｒ以传入merge_cart_cookie_to_redis（）
+            # 获取user以传入merge_cart_cookie_to_redis()
             user = serializer.object.get('user') or request.user
 
             merge_cart_cookie_to_redis(request, user, response)
 
         return response
+
+
+
+
 
 
 

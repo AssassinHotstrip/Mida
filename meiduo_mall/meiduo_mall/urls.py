@@ -15,26 +15,25 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+# from meiduo_mall.apps import payment
+import xadmin
 
 urlpatterns = [
+    # url(r'^admin/', admin.site.urls),
 
-    url(r'^admin/', admin.site.urls),
-
-    # 富文本编辑器路由
+    url(r'xadmin/', include(xadmin.site.urls)),
+    # 富文本编辑器的路由
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
-
-
 
     # 发短信
     url(r'^', include('verifications.urls')),
-
     # 用户
     url(r'^', include('users.urls')),
 
     # QQ模块路由
     url(r'^oauth/', include('oauth.urls')),
 
-    # 省市区路由
+    # 省市区
     url(r'^', include('areas.urls')),
 
     # 商品模块
@@ -42,6 +41,13 @@ urlpatterns = [
 
     # 购物车模块
     url(r'^', include('carts.urls')),
+
+    # 订单模块
+    url(r'^', include('orders.urls')),
+
+    # 支付宝模块
+    url(r'^', include('payment.urls')),
+
 
 ]
 

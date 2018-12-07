@@ -17,13 +17,14 @@ var vm = new Vue({
         mobile: '',
         sms_code: '',
         allow: false,
-        sms_code_tip: '获取短信验证码',  //短信验证码按钮提示
-        error_sms_code_message: '',  //验证码错误提示
-        error_name_message: '',  //用户名错误提示
-        error_phone_message: ''  //手机号错误提示
+        sms_code_tip: '获取短信验证码',  // 短信验证码提示
+        error_sms_code_message: '',  // 验证码错误提示
+        error_name_message: '',  // 用户名错误提示
+        error_phone_message: '',  // 手机号码错误提示
 
     },
     methods: {
+        // 检查用户名
         check_username: function () {
             var len = this.username.length;
             if (len < 5 || len > 20) {
@@ -65,12 +66,30 @@ var vm = new Vue({
                 this.error_check_password = false;
             }
         },
+// 检查手机号
         check_phone: function () {
-            var re = /^1[345789]\d{9}$/;
+            var re = /^1[3-9]\d{9}$/;
             if (re.test(this.mobile)) {
                 this.error_phone = false;
             } else {
+                this.error_phone_message = '您输入的手机号格式不正确';
                 this.error_phone = true;
+            }
+            if (this.error_phone == false) {
+                axios.get(this.host + '/mobiles/' + this.mobile + '/count/', {
+                    responseType: 'json'
+                })
+                    .then(response => {
+                        if (response.data.count > 0) {
+                            this.error_phone_message = '手机号已存在';
+                            this.error_phone = true;
+                        } else {
+                            this.error_phone = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error.response.data);
+                    })
             }
         },
         check_sms_code: function () {
@@ -108,44 +127,35 @@ var vm = new Vue({
                 responseType: 'json'
             })
                 .then(response => {
-                // 表示后端发送短信成功
-                // 倒计时60秒，60秒后允许用户再次点击发送短信验证码的按钮
-                var num = 60;
-            // 设置一个计时器
-            var t = setInterval(() => {
-                    if (num == 1){
-                // 如果计时器到最后, 清除计时器对象
-                clearInterval(t);
-                // 将点击获取验证码的按钮展示的文本回复成原始文本
-                this.sms_code_tip = '获取短信验证码';
-                // 将点击按钮的onclick事件函数恢复回去
-                this.sending_flag = false;
-            }
-            else
-            {
-                num -= 1;
-                // 展示倒计时信息
-                this.sms_code_tip = num + '秒';
-            }
-        },
-            1000, 60
-            )
-        })
-            .
-            catch(error => {
-                if (error.response.status == 400
-            )
-            {
-                // 展示发送短信错误提示
-                this.error_sms_code = true;
-                this.error_sms_code_message = error.response.data.message;
-            }
-            else
-            {
-                console.log(error.response.data);
-            }
-            this.sending_flag = false;
-        })
+                    // 表示后端发送短信成功
+                    // 倒计时60秒，60秒后允许用户再次点击发送短信验证码的按钮
+                    var num = 60;
+                    // 设置一个计时器
+                    var t = setInterval(() => {
+                        if (num == 1) {
+                            // 如果计时器到最后, 清除计时器对象
+                            clearInterval(t);
+                            // 将点击获取验证码的按钮展示的文本回复成原始文本
+                            this.sms_code_tip = '获取短信验证码';
+                            // 将点击按钮的onclick事件函数恢复回去
+                            this.sending_flag = false;
+                        } else {
+                            num -= 1;
+                            // 展示倒计时信息
+                            this.sms_code_tip = num + '秒';
+                        }
+                    }, 1000, 60)
+                })
+                .catch(error => {
+                    if (error.response.status == 400) {
+                        // 展示发送短信错误提示
+                        this.error_sms_code = true;
+                        this.error_sms_code_message = error.response.data.message;
+                    } else {
+                        console.log(error.response.data);
+                    }
+                    this.sending_flag = false;
+                })
         },
         // 注册
         on_submit: function () {
@@ -176,7 +186,7 @@ var vm = new Vue({
                         localStorage.username = response.data.username;
                         localStorage.user_id = response.data.id;
                         location.href = '/index.html';
-                })
+                    })
                     .catch(error => {
                         if (error.response.status == 400) {
                             if ('non_field_errors' in error.response.data) {
@@ -191,6 +201,5 @@ var vm = new Vue({
                     })
             }
         }
-
     }
 });

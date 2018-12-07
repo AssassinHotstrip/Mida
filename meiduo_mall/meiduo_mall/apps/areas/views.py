@@ -7,7 +7,7 @@ from .serializers import AreaSerializer,SubsAreaSerializer
 # Create your views here.
 class AreasViewSet(ReadOnlyModelViewSet):
     """返回省市区数据"""
-
+    pagination_class = None  # 关闭分页(重要)
     # 指定查询集
     # queryset = Area.objects.all()重写返回指定查询集
     def get_queryset(self):
